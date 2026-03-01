@@ -9,12 +9,31 @@ contract SmartContractWallet {
     mapping(address => uint) public allowance;
     mapping(address => bool) public isAllowedToSend;
 
-    mapping(address => bool) public guardians;
+    mapping(address => bool) public guardians;  
+    address payable nextOwner;
+    uint guardiansResetCount;
+    uint public constant confirmationfromGuardiansForReset = 3 ;
 
     constructor(){
         owner = payable(msg.sender);
-        
   }
+
+  function proposeNewOwner(address payable _newOwner) public {
+    require(guardians[msg.sender], "You are not guardian of this wallet, aborting");
+    if(_newOwner != nextOwner) {
+        nextOwner = _newOwner;
+        guardiansResetCount = 0;
+    }
+
+    guardiansResetCount++;
+
+    if(guardiansResetCount >= confirmationfromGuardiansForReset){
+        owner = nextOwner;
+        nextOwner = payable (address(0));
+    }
+  }
+
+    
 
     function setGuardian(address _guardian, bool _isGuardian) public {
         require(msg.sender == owner, "You are not the owner, aborting");
@@ -43,4 +62,5 @@ contract SmartContractWallet {
     require(success, "Aborting, call was successful");
     return returnData;
   }
+  receive() external payable{}
 }
